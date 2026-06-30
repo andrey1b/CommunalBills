@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Threading;
 using Microsoft.Web.WebView2.Core;
 
@@ -40,6 +41,9 @@ public partial class MainWindow : Window
         CmbBank.ItemsSource = BankService.All();
         CmbBank.SelectedIndex = 0;
 
+        CmbPeriod.ItemsSource = new[] { "Этот месяц", "Этот год", "Всё время" };
+        CmbPeriod.SelectedIndex = 1;   // по умолчанию — этот год (полезнее, чем «за всё время»)
+
         UpdateListInfo();
         Closing += (_, _) => SaveSettings();
         Loaded += (_, _) =>
@@ -56,6 +60,9 @@ public partial class MainWindow : Window
 
     private void BuildUtilityExpenses()
     {
+        // во время инициализации окна CmbPeriod может ещё не существовать
+        if (TxtExpensesTotal is null) return;
+
         if (!HomeAccountingReader.IsAvailable)
         {
             TxtExpensesTotal.Text = "Расходы на коммуналку (из «Денег»)";
@@ -64,10 +71,23 @@ public partial class MainWindow : Window
             return;
         }
 
-        var items = HomeAccountingReader.GetUtilityExpenses();
+        // Фильтр периода: 0 — этот месяц, 1 — этот год, 2 — всё время
+        int period = CmbPeriod?.SelectedIndex ?? 1;
+        string monthPrefix = DateTime.Today.ToString("yyyy-MM");
+        string yearPrefix  = DateTime.Today.ToString("yyyy");
+        string periodLabel = period == 0 ? "за этот месяц" : period == 1 ? "за этот год" : "за всё время";
+
+        var items = HomeAccountingReader.GetUtilityExpenses()
+            .Where(e => period switch
+            {
+                0 => e.Date.StartsWith(monthPrefix, StringComparison.Ordinal),
+                1 => e.Date.StartsWith(yearPrefix,  StringComparison.Ordinal),
+                _ => true
+            })
+            .ToList();
         decimal total = HomeAccountingReader.Total(items);
 
-        TxtExpensesTotal.Text = $"Потрачено на коммуналку: {total:N2} ₴";
+        TxtExpensesTotal.Text = $"Потрачено на коммуналку {periodLabel}: {total:N2} ₴";
 
         var rows = items.Select(e =>
         {
@@ -78,11 +98,13 @@ public partial class MainWindow : Window
 
         ExpensesList.ItemsSource = rows;
         TxtExpensesInfo.Text = rows.Count == 0
-            ? "Записей нет. Расходы ведутся в программе «Деньги» (категория «Коммунальные услуги»)."
-            : $"Записей: {rows.Count}. Источник: «Деньги», только чтение.";
+            ? "Записей нет за выбранный период. Расходы ведутся в программе «Деньги» (категория «Коммунальные услуги»)."
+            : $"Записей: {rows.Count} ({periodLabel}). Источник: «Деньги», только чтение.";
     }
 
     private void BtnRefreshExpenses_Click(object sender, RoutedEventArgs e) => BuildUtilityExpenses();
+
+    private void CmbPeriod_SelectionChanged(object sender, SelectionChangedEventArgs e) => BuildUtilityExpenses();
 
     private void BtnOpenMoney_Click(object sender, RoutedEventArgs e) => HomeAccountingReader.OpenHomeAccounting();
 
