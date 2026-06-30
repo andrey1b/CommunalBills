@@ -42,8 +42,55 @@ public partial class MainWindow : Window
 
         UpdateListInfo();
         Closing += (_, _) => SaveSettings();
-        Loaded += (_, _) => _ = UpdateChecker.CheckAsync(this);
+        Loaded += (_, _) =>
+        {
+            _ = UpdateChecker.CheckAsync(this);
+            BuildUtilityExpenses();
+        };
     }
+
+    // ───────── Вкладка 4: расходы из «Денег» (только чтение) ─────────
+
+    // Строка для отображения в таблице (отформатированные поля).
+    private sealed record ExpenseRow(string DateText, string Name, string Account, string AmountText);
+
+    private void BuildUtilityExpenses()
+    {
+        if (!HomeAccountingReader.IsAvailable)
+        {
+            TxtExpensesTotal.Text = "Расходы на коммуналку (из «Денег»)";
+            TxtExpensesInfo.Text  = "Программа «Деньги» не установлена — фактические расходы недоступны.";
+            ExpensesList.ItemsSource = null;
+            return;
+        }
+
+        var items = HomeAccountingReader.GetUtilityExpenses();
+        decimal total = HomeAccountingReader.Total(items);
+
+        TxtExpensesTotal.Text = $"Потрачено на коммуналку: {total:N2} ₴";
+
+        var rows = items.Select(e =>
+        {
+            string name = !string.IsNullOrWhiteSpace(e.Subcategory) ? e.Subcategory : e.Category;
+            if (!string.IsNullOrWhiteSpace(e.Note)) name += " — " + e.Note;
+            return new ExpenseRow(FmtDate(e.Date), name, e.Account, e.Amount.ToString("N2"));
+        }).ToList();
+
+        ExpensesList.ItemsSource = rows;
+        TxtExpensesInfo.Text = rows.Count == 0
+            ? "Записей нет. Расходы ведутся в программе «Деньги» (категория «Коммунальные услуги»)."
+            : $"Записей: {rows.Count}. Источник: «Деньги», только чтение.";
+    }
+
+    private void BtnRefreshExpenses_Click(object sender, RoutedEventArgs e) => BuildUtilityExpenses();
+
+    private void BtnOpenMoney_Click(object sender, RoutedEventArgs e) => HomeAccountingReader.OpenHomeAccounting();
+
+    // Дата из «Денег» хранится как yyyy-MM-dd → показываем dd.MM.yyyy
+    private static string FmtDate(string iso)
+        => DateTime.TryParse(iso, System.Globalization.CultureInfo.InvariantCulture,
+               System.Globalization.DateTimeStyles.None, out var dt)
+           ? dt.ToString("dd.MM.yyyy") : iso;
 
     // Одно окружение WebView2 на оба браузера (создаётся один раз).
     private Task<CoreWebView2Environment> EnsureEnvAsync()

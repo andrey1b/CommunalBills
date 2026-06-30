@@ -199,7 +199,52 @@
                 </Grid>
             </TabItem>
 
-            <!-- ВКЛАДКА 4: Спросить у ИИ -->
+            <!-- ВКЛАДКА 4: расходы из «Денег» (только чтение) -->
+            <TabItem Header="💰 Расходы (из «Денег»)">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" Background="#FFEAF2EC" Padding="12,10"
+                            BorderBrush="#FFD5E2DA" BorderThickness="0,0,0,1">
+                        <DockPanel>
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
+                                <Button x:Name="BtnRefreshExpenses" Content="🔄 Обновить" Click="BtnRefreshExpenses_Click"
+                                        Padding="12,6" Margin="6,0,0,0" Background="White" BorderBrush="#FFCCD8D0" Cursor="Hand"/>
+                                <Button x:Name="BtnOpenMoney" Content="Открыть «Деньги» ▶" Click="BtnOpenMoney_Click"
+                                        Padding="14,6" Margin="6,0,0,0" FontWeight="SemiBold"
+                                        Background="#FF1F6E43" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                            </StackPanel>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock x:Name="TxtExpensesTotal" FontSize="15" FontWeight="Bold" Foreground="#FF1F6E43"/>
+                                <TextBlock Text="Расходы на коммуналку ведутся в программе «Деньги» (категория «Коммунальные услуги»). Здесь — только просмотр."
+                                           Foreground="#FF6B8576" FontSize="11"/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <ListView Grid.Row="1" x:Name="ExpensesList" BorderThickness="0" Margin="0">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Дата" Width="100" DisplayMemberBinding="{Binding DateText}"/>
+                                <GridViewColumn Header="Услуга / статья" Width="360" DisplayMemberBinding="{Binding Name}"/>
+                                <GridViewColumn Header="Счёт" Width="170" DisplayMemberBinding="{Binding Account}"/>
+                                <GridViewColumn Header="Сумма, ₴" Width="120" DisplayMemberBinding="{Binding AmountText}"/>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+
+                    <Border Grid.Row="2" Background="#FFF3F6F4" Padding="10,5"
+                            BorderBrush="#FFE0E0E0" BorderThickness="0,1,0,0">
+                        <TextBlock x:Name="TxtExpensesInfo" Text="" Foreground="#FF777777" FontSize="11"/>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- ВКЛАДКА 5: Спросить у ИИ -->
             <TabItem Header="🤖 Спросить у ИИ">
                 <local:AskAiView/>
             </TabItem>

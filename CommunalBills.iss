@@ -1,7 +1,7 @@
 ; Установщик «Коммунальные счета» (CommunalBills)
 #define MyAppName "Коммунальные счета"
 #define MyAppExe "CommunalBills.exe"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "1.2.0"
 #define MyAppPublisher "andrey1b"
 #define MyAppURL "https://github.com/andrey1b/CommunalBills"
 #define SourceDir "bin\Release\net9.0-windows\win-x64\publish"
