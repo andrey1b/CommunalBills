@@ -4,6 +4,7 @@ using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Threading;
 using Microsoft.Web.WebView2.Core;
 
@@ -107,6 +108,65 @@ public partial class MainWindow : Window
     private void CmbPeriod_SelectionChanged(object sender, SelectionChangedEventArgs e) => BuildUtilityExpenses();
 
     private void BtnOpenMoney_Click(object sender, RoutedEventArgs e) => HomeAccountingReader.OpenHomeAccounting();
+
+    // «Записать платёж в «Деньги»»: услуга + сумма → черновик в общую очередь.
+    // Запись делает сама «Деньги» при следующем запуске (правило офиса).
+    private void BtnAddPayment_Click(object sender, RoutedEventArgs e)
+    {
+        var services = _providers.Select(p => p.Service)
+            .Concat(new[] { "Газ", "Электроэнергия", "Вода холодная", "Отопление", "Квартплата", "Мусор" })
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s!.Trim()).Distinct().OrderBy(s => s).ToList();
+
+        var stack = new StackPanel { Margin = new Thickness(16) };
+        stack.Children.Add(new TextBlock { Text = "Услуга:", Margin = new Thickness(0, 0, 0, 3) });
+        var cmb = new ComboBox { IsEditable = true, ItemsSource = services, Margin = new Thickness(0, 0, 0, 10) };
+        if (services.Count > 0) cmb.SelectedIndex = 0;
+        stack.Children.Add(cmb);
+        stack.Children.Add(new TextBlock { Text = "Сумма, ₴:", Margin = new Thickness(0, 0, 0, 3) });
+        var tbAmount = new TextBox { Margin = new Thickness(0, 0, 0, 10) };
+        stack.Children.Add(tbAmount);
+        stack.Children.Add(new TextBlock { Text = "Дата:", Margin = new Thickness(0, 0, 0, 3) });
+        var tbDate = new TextBox { Text = DateTime.Today.ToString("dd.MM.yyyy"), Margin = new Thickness(0, 0, 0, 10) };
+        stack.Children.Add(tbDate);
+        var err = new TextBlock { Foreground = Brushes.OrangeRed, FontSize = 11, TextWrapping = TextWrapping.Wrap,
+                                  Visibility = Visibility.Collapsed, Margin = new Thickness(0, 0, 0, 8) };
+        stack.Children.Add(err);
+
+        var row = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        var ok = new Button { Content = "Записать", Padding = new Thickness(14, 5, 14, 5), Margin = new Thickness(0, 0, 8, 0), IsDefault = true };
+        var cancel = new Button { Content = "Отмена", Padding = new Thickness(14, 5, 14, 5), IsCancel = true };
+        row.Children.Add(ok); row.Children.Add(cancel);
+        stack.Children.Add(row);
+
+        var win = new Window
+        {
+            Title = "Записать платёж в «Деньги»", Owner = this, Width = 380,
+            SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            ResizeMode = ResizeMode.NoResize, Content = stack
+        };
+
+        ok.Click += (_, _) =>
+        {
+            var svc = (cmb.Text ?? "").Trim();
+            if (string.IsNullOrEmpty(svc)) { err.Text = "Укажите услугу."; err.Visibility = Visibility.Visible; return; }
+            if (!decimal.TryParse((tbAmount.Text ?? "").Replace(',', '.'),
+                    System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var amt) || amt <= 0)
+            { err.Text = "Введите сумму больше нуля."; err.Visibility = Visibility.Visible; return; }
+            DateTime d = DateTime.TryParse(tbDate.Text, out var dt) ? dt : DateTime.Today;
+            ExpenseDraftQueue.Add(new ExpenseDraft(Guid.NewGuid().ToString("N"), "Коммуналка",
+                d.ToString("yyyy-MM-dd"), "Коммунальные услуги", svc, (double)amt, $"{svc} (оплата)"));
+            win.DialogResult = true;
+        };
+        cancel.Click += (_, _) => win.DialogResult = false;
+
+        if (win.ShowDialog() != true) return;
+
+        var ans = MessageBox.Show(this,
+            "Платёж отправлен в «Деньги».\n\nОткрыть «Деньги» сейчас для подтверждения?",
+            "Записать платёж", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (ans == MessageBoxResult.Yes) HomeAccountingReader.OpenHomeAccounting();
+    }
 
     // Дата из «Денег» хранится как yyyy-MM-dd → показываем dd.MM.yyyy
     private static string FmtDate(string iso)

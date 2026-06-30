@@ -11,7 +11,7 @@
     <Product>Коммунальные счета</Product>
     <Description>Справочник коммунальных предприятий и быстрый доступ к оплате</Description>
     <Authors>andrey1b</Authors>
-    <Version>1.3.0</Version>
+    <Version>1.4.0</Version>
     <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
 

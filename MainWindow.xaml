@@ -215,6 +215,9 @@
                                 <TextBlock Text="Период:" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#FF555555"/>
                                 <ComboBox x:Name="CmbPeriod" Width="150" VerticalAlignment="Center"
                                           SelectionChanged="CmbPeriod_SelectionChanged"/>
+                                <Button x:Name="BtnAddPayment" Content="➕ Записать платёж" Click="BtnAddPayment_Click"
+                                        Padding="12,6" Margin="6,0,0,0" Background="White" BorderBrush="#FFCCD8D0" Cursor="Hand"
+                                        ToolTip="Записать оплаченный коммунальный платёж в «Деньги»"/>
                                 <Button x:Name="BtnRefreshExpenses" Content="🔄 Обновить" Click="BtnRefreshExpenses_Click"
                                         Padding="12,6" Margin="6,0,0,0" Background="White" BorderBrush="#FFCCD8D0" Cursor="Hand"/>
                                 <Button x:Name="BtnOpenMoney" Content="Открыть «Деньги» ▶" Click="BtnOpenMoney_Click"
